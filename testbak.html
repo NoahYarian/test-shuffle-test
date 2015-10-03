@@ -34,60 +34,72 @@ If you have any questions, please do not hesitate to ask.
 RandomizeTest accepts and returns a Test object. The questions in the returned object should be in a random order.
 The order of the choices within each question should also be randomized.
 */
+// function RandomizeTest(tstObject){
+//   var randomizedTest = {};
 
-// A main question here in writing this function is "how random does this need to be?" Is this for professional certifications
-// or is this in elementary school classrooms? For now I've settled on using a generally accepted, yet non-cryptographic level
-// shuffling algorithm, but also on getting a new random seed for the question order and the choice/answer order. It wouldn't
-// affect this test, as it appears to be manually randomized to a degree already, but writing future tests could be more
-// straightforward as the correct choices and answers could be listed first in the array.
-// If this needed to be as random as possible, thoughts I have would be to use the random.org API to get a random number on demand,
-// if an internet connection is available and could be sufficiently protected, use a hardware random number generator,
-// or... well I see now there's a Web Crypto API. Time to implement it here!
+//   randomizedTest.randomizedQuestions = shuffleArr(tstObject.questions);
+//   var seed = getSeed(tstObject.questions, randomizedTest.randomizedQuestions);
+//   randomizedTest.answers = applySeed(tstObject.answers, seed);
+//   randomizedTest.choices = applySeed(tstObject.choices, seed);
+
+//   randomizedTest.randomizedChoices = [];
+//   randomizedTest.randomizedAnswers = [];
+//   var choicesSeed;
+
+//   randomizedTest.choices.forEach(function(choicesArr, i) {
+//     randomizedTest.randomizedChoices[i] = shuffleArr(choicesArr);
+//     choicesSeed = getSeed(choicesArr, randomizedTest.randomizedChoices[i]);
+//     randomizedTest.randomizedAnswers[i] = applySeed(randomizedTest.answers[i], choicesSeed);
+//   });
+
+//   return {
+//     questions: randomizedTest.randomizedQuestions,
+//     choices: randomizedTest.randomizedChoices,
+//     answers: randomizedTest.randomizedAnswers
+//   }
+// }
 
 function RandomizeTest(tstObject) {
+  var seed = [];
+  tstObject.questions.forEach(function(q, i) {
+    seed.push(i);
+  });
 
-  var seed = getSeed(tstObject.questions); // gets an array that will be used as a key to shuffle multiple arrays in the same way
+  seed = knuthShuffle(seed);
 
   for (var key in tstObject) {
-    tstObject[key] = applySeed(tstObject[key], seed); // Maybe wrapping this in a hasOwnProperty conditional
-                                                      // would protect against changes to the Test constructor,
-                                                      // where perhaps some tests are created with new data fields
-                                                      // like date,name, school, etc., while other, older tests
-                                                      // consist only of questions, choices, and answers. That seems
-                                                      // like overkill to me but it crossed my mind.
+    tstObject[key] = applySeed(tstObject[key], seed);
   }
-
-  tstObject.choices.forEach(function(choicesAry, i) {
-    seed = getSeed(choicesAry);
-    tstObject.choices[i] = applySeed(choicesAry, seed);
-    tstObject.answers[i] = applySeed(tstObject.answers[i], seed);
-  });
 
   return tstObject;
 }
 
-function getSeed(ary) {
-  var indexAry = ary.map(function(item, i) {
-    return i;
+function getSeed(orderedArr, randomizedArr) {
+  var seed = [];
+  orderedArr.forEach(function(item) {
+    seed.push(randomizedArr.indexOf(item));
   });
-  return shuffle(indexAry);
+  return seed;
 }
 
-function applySeed(ary, seed) {
+function applySeed(arr, seed) {
   return seed.map(function(seededIndex) {
-    return ary[seededIndex];
+    return arr[seededIndex];
   });
 }
 
-// The shuffle function below is from http://rosettacode.org/wiki/Knuth_shuffle#JavaScript
-// When prompted with the need to shuffle, I recalled that lodash has a shuffle method,
-// so I checked out their source code for it, as well as Underscore's, as their code is purposefully
-// simpler but more approachable. Both libraries deal with collections and edge cases, so I really
-// didn't need much of what they offered. I ended up finding the function below after writing my own,
-// less clean function, so I've opted for theirs over mine. At the time I was figuring out the seed
-// after shuffling the array and comparing it to the initial array with another function, so I had to
-// avoid modifying the array in place. Here's mine from before:
-//
+function knuthShuffle(arr) {
+  var rand, temp, i;
+
+  for (i = arr.length - 1; i > 0; i -= 1) {
+      rand = Math.floor((i + 1) * Math.random());//get random between zero and i (inclusive)
+      temp = arr[rand];//swap i and the zero-indexed number
+      arr[rand] = arr[i];
+      arr[i] = temp;
+  }
+  return arr;
+}
+
 // function shuffleArr(arr) {
 //   var orderedArr = [];
 //   var randomizedArr = [];
@@ -104,18 +116,19 @@ function applySeed(ary, seed) {
 //   return randomizedArr;
 // }
 
+// var res = {
+//     '1,2,3': 0, '1,3,2': 0,
+//     '2,1,3': 0, '2,3,1': 0,
+//     '3,1,2': 0, '3,2,1': 0
+// };
 
-function shuffle(ary) {
-  var rand, temp, i;
+// for (var i = 0; i < 100000; i++) {
+//     res[shuffleArr([1,2,3]).join(',')] += 1;
+// }
 
-  for (i = ary.length - 1; i > 0; i--) {
-    rand = Math.floor(Math.random() * (i + 1));  //get random between zero and i (inclusive)
-    temp = ary[rand];  //swap i and the zero-indexed number
-    ary[rand] = ary[i];
-    ary[i] = temp;
-  }
-  return ary;
-}
+// for (var key in res) {
+//     console.log(key + "\t" + res[key]);
+// }
 
 /**********************************************************/
 //***End randomization code section***//
