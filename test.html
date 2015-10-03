@@ -35,44 +35,45 @@ RandomizeTest accepts and returns a Test object. The questions in the returned o
 The order of the choices within each question should also be randomized.
 */
 function RandomizeTest(tstObject) {
-  var seed = tstObject.questions.map(function(q, i) {
-    return i;
-  });
 
-  seed = knuthShuffle(seed);
+  var seed = getSeed(tstObject.questions);
 
   for (var key in tstObject) {
     tstObject[key] = applySeed(tstObject[key], seed);
   }
 
-  tstObject.choices.forEach(function(cArr, i) {
-    seed = cArr.map(function(c, i) {
-      return i;
-    });
-    seed = knuthShuffle(seed);
-    tstObject.choices[i] = applySeed(cArr, seed);
+  tstObject.choices.forEach(function(cAry, i) {
+    seed = getSeed(cAry);
+    tstObject.choices[i] = applySeed(cAry, seed);
     tstObject.answers[i] = applySeed(tstObject.answers[i], seed);
   });
 
   return tstObject;
 }
 
-function applySeed(arr, seed) {
+function getSeed(ary) {
+  var indexAry = ary.map(function(item, i) {
+    return i;
+  });
+  return shuffle(indexAry);
+}
+
+function applySeed(ary, seed) {
   return seed.map(function(seededIndex) {
-    return arr[seededIndex];
+    return ary[seededIndex];
   });
 }
 
-function knuthShuffle(arr) {  // http://rosettacode.org/wiki/Knuth_shuffle#JavaScript
+function shuffle(ary) {  // http://rosettacode.org/wiki/Knuth_shuffle#JavaScript
   var rand, temp, i;
 
-  for (i = arr.length - 1; i > 0; i--) {
+  for (i = ary.length - 1; i > 0; i--) {
     rand = Math.floor(Math.random() * (i + 1));  //get random between zero and i (inclusive)
-    temp = arr[rand];  //swap i and the zero-indexed number
-    arr[rand] = arr[i];
-    arr[i] = temp;
+    temp = ary[rand];  //swap i and the zero-indexed number
+    ary[rand] = ary[i];
+    ary[i] = temp;
   }
-  return arr;
+  return ary;
 }
 
 /**********************************************************/
