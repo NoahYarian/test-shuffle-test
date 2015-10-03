@@ -40,9 +40,8 @@ The order of the choices within each question should also be randomized.
 // shuffling algorithm, but also on getting a new random seed for the question order and the choice/answer order. It wouldn't
 // affect this test, as it appears to be manually randomized to a degree already, but writing future tests could be more
 // straightforward as the correct choices and answers could be listed first in the array.
-// If this needed to be as random as possible, thoughts I have would be to use the random.org API to get a random number on demand,
-// if an internet connection is available and could be sufficiently protected, use a hardware random number generator,
-// or... well I see now there's a Web Crypto API. Time to implement it here!
+// If this needed to be as random as possible, thoughts I have would be to use the random.org API to get a random number on demand // (if an internet connection is available and could be sufficiently protected), a local hardware random number generator,
+// Chance.js or another library, or... well I see now there's a Web Crypto API. Time to implement it here!
 
 function RandomizeTest(tstObject) {
 
@@ -79,7 +78,7 @@ function applySeed(ary, seed) {
   });
 }
 
-// The shuffle function below is from http://rosettacode.org/wiki/Knuth_shuffle#JavaScript
+
 // When prompted with the need to shuffle, I recalled that lodash has a shuffle method,
 // so I checked out their source code for it, as well as Underscore's, as their code is purposefully
 // simpler but more approachable. Both libraries deal with collections and edge cases, so I really
@@ -104,17 +103,60 @@ function applySeed(ary, seed) {
 //   return randomizedArr;
 // }
 
-
-function shuffle(ary) {
+function shuffle(ary) {  // from http://rosettacode.org/wiki/Knuth_shuffle#JavaScript
   var rand, temp, i;
 
   for (i = ary.length - 1; i > 0; i--) {
-    rand = Math.floor(Math.random() * (i + 1));  //get random between zero and i (inclusive)
+    // rand = Math.floor(Math.random() * (i + 1));
+    rand = getRandomInt(0, i); //get random between zero and i (inclusive)
     temp = ary[rand];  //swap i and the zero-indexed number
     ary[rand] = ary[i];
     ary[i] = temp;
   }
   return ary;
+}
+
+// working off of http://stackoverflow.com/questions/4083204/secure-random-numbers-in-javascript?rq=1
+// and http://stackoverflow.com/questions/18230217/javascript-generate-a-random-number-within-a-range-using-crypto-getrandomvalues
+function getRandomInt(min, max) {
+  // TODO: handle more than 256 questions or choices without changing from a Uint8Array
+
+  // Create byte array and fill with 1 random number
+  var byteArray = new Uint8Array(1);
+
+  // First we're going to try to use a built-in CSPRNG
+  if (window.crypto && window.crypto.getRandomValues) {
+    window.crypto.getRandomValues(byteArray);
+  }
+  // Because of course IE calls it msCrypto instead of being standard
+  else if (window.msCrypto && window.msCrypto.getRandomValues) {
+    window.msCrypto.getRandomValues(byteArray);
+  }
+
+  var range = max - min + 1;
+  var max_range = 256;
+  if (byteArray[0] >= Math.floor(max_range / range) * range) {
+    return getRandomInt(min, max);
+  }
+  return min + (byteArray[0] % range);
+
+}
+
+// In writing my own shuffling functions I found this function from rosettaCode useful:
+function testRandomness() {
+  var res = {
+    '1,2,3': 0, '1,3,2': 0,
+    '2,1,3': 0, '2,3,1': 0,
+    '3,1,2': 0, '3,2,1': 0
+  };
+
+  for (var i = 0; i < 100000; i++) {
+    res[shuffle([1,2,3]).join(',')] += 1;
+  }
+
+  for (var key in res) {
+    console.log(key + "\t" + res[key]);
+  }
 }
 
 /**********************************************************/
