@@ -62,7 +62,7 @@ function getSeed(ary) {  // gets an array that will be used as a key for shuffli
   return shuffle(seedAry); // returns shuffled array of indexes
 }
 
-function applySeed(ary, seed) {
+function applySeed(ary, seed) {  // returns a reordered array according to provided data array and seed array
   var newIndex, shuffledAry = [];
 
   for (var i = 0; i < ary.length; i++) {
@@ -73,59 +73,17 @@ function applySeed(ary, seed) {
   return shuffledAry;
 }
 
-function shuffle(ary) {  // from http://rosettacode.org/wiki/Knuth_shuffle#JavaScript
+function shuffle(ary) {  // Fisher–Yates / Knuth shuffle
   var rand, temp, i;
 
   for (i = ary.length - 1; i > 0; i--) {
-    rand = getRandomInt(0, i); // get random between zero and i (inclusive)
+    rand = Math.floor(Math.random() * (i + 1)); // get random integer between zero and i (inclusive)
     temp = ary[rand];  // swap i and the zero-indexed number
     ary[rand] = ary[i];
     ary[i] = temp;
   }
   return ary;
 }
-
-// working off of http://stackoverflow.com/questions/4083204/secure-random-numbers-in-javascript?rq=1
-// and http://stackoverflow.com/questions/18230217/javascript-generate-a-random-number-within-a-range-using-crypto-getrandomvalues
-function getRandomInt(min, max) {
-
-  // Create byte array and fill with 1 random number
-  var byteArray = max < 256 ? new Uint8Array(1) : new Uint16Array(1); // Hopefully no test will have 70,000 questions.
-
-  // First we're going to try to use a built-in CSPRNG
-  if (window.crypto && window.crypto.getRandomValues) {
-    window.crypto.getRandomValues(byteArray);
-  }
-  // Because of course IE calls it msCrypto instead of being standard
-  else if (window.msCrypto && window.msCrypto.getRandomValues) {
-    window.msCrypto.getRandomValues(byteArray);
-  }
-
-  var range = max - min + 1;
-  var max_range = max < 256 ? 256 : 65536;
-  if (byteArray[0] >= Math.floor(max_range / range) * range) {
-    return getRandomInt(min, max);
-  }
-  return min + (byteArray[0] % range);
-
-}
-
-// In writing my own shuffling functions I found this function from rosettaCode useful:
-// function testRandomness() {
-//   var res = {
-//     '1,2,3': 0, '1,3,2': 0,
-//     '2,1,3': 0, '2,3,1': 0,
-//     '3,1,2': 0, '3,2,1': 0
-//   };
-
-//   for (var i = 0; i < 100000; i++) {
-//     res[shuffle([1,2,3]).join(',')] += 1;
-//   }
-
-//   for (var key in res) {
-//     console.log(key + "\t" + res[key]);
-//   }
-// }
 
 /**********************************************************/
 //***End randomization code section***//
