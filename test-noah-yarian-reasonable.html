@@ -35,82 +35,50 @@ RandomizeTest accepts and returns a Test object. The questions in the returned o
 The order of the choices within each question should also be randomized.
 */
 
-// A main question here in writing this function is "how random does this need to be?" Is this for professional certifications
-// or is this in elementary school classrooms? For now I've settled on using a generally accepted, yet non-cryptographic level
-// shuffling algorithm, but also on getting a new random seed for the question order and the choice/answer order. It wouldn't
-// affect this test, as it appears to be manually randomized to a degree already, but writing future tests could be more
-// straightforward as the correct choices and answers could be listed first in the array.
-// If this needed to be as random as possible, thoughts I have would be to use the random.org API to get a random number on demand // (if an internet connection is available and could be sufficiently protected), a local hardware random number generator,
-// Chance.js or another library, or... well I see now there's a Web Crypto API. Time to implement it here!
-// Ok, updated. I have it working for a max of 256 questions / choices.
-
 function RandomizeTest(tstObject) {
 
-  var seed = getSeed(tstObject.questions); // gets an array that will be used as a key to shuffle multiple arrays in the same way
+  var seed = getSeed(tstObject.questions);  // gets key for shuffling questions
 
   for (var key in tstObject) {
-    tstObject[key] = applySeed(tstObject[key], seed); // Maybe wrapping this in a hasOwnProperty conditional
-                                                      // would protect against changes to the Test constructor,
-                                                      // where perhaps some tests are created with new data fields
-                                                      // like date,name, school, etc., while other, older tests
-                                                      // consist only of questions, choices, and answers. That seems
-                                                      // like overkill to me but it crossed my mind.
+    tstObject[key] = applySeed(tstObject[key], seed);  // shuffles question order
   }
 
-  tstObject.choices.forEach(function(choicesAry, i) {
-    seed = getSeed(choicesAry);
-    tstObject.choices[i] = applySeed(choicesAry, seed);
+  for (var i = 0; i < tstObject.choices.length; i++) {  // gets new keys and shuffles answer orders
+    seed = getSeed(tstObject.choices[i]);
+    tstObject.choices[i] = applySeed(tstObject.choices[i], seed);
     tstObject.answers[i] = applySeed(tstObject.answers[i], seed);
-  });
+  };
 
   return tstObject;
 }
 
-function getSeed(ary) {
-  var indexAry = ary.map(function(item, i) {
-    return i;
-  });
-  return shuffle(indexAry);
+function getSeed(ary) {  // gets an array that will be used as a key for shuffling other arrays
+  var seedAry = [];
+
+  for (var i = 0; i < ary.length; i++) {  // create array of indexes
+    seedAry[i] = i;
+  }
+
+  return shuffle(seedAry); // returns shuffled array of indexes
 }
 
 function applySeed(ary, seed) {
-  return seed.map(function(seededIndex) {
-    return ary[seededIndex];
-  });
+  var newIndex, shuffledAry = [];
+
+  for (var i = 0; i < ary.length; i++) {
+    newIndex = seed[i];
+    shuffledAry[newIndex] = ary[i];
+  }
+
+  return shuffledAry;
 }
-
-
-// When prompted with the need to shuffle, I recalled that lodash has a shuffle method,
-// so I checked out their source code for it, as well as Underscore's, as their code is purposefully
-// simpler but more approachable. Both libraries deal with collections and edge cases, so I really
-// didn't need much of what they offered. I ended up finding the function below after writing my own,
-// less clean function, so I've opted for theirs over mine. At the time I was figuring out the seed
-// after shuffling the array and comparing it to the initial array with another function, so I had to
-// avoid modifying the array in place. Here's mine from before:
-//
-// function shuffleArr(arr) {
-//   var orderedArr = [];
-//   var randomizedArr = [];
-
-//   for (var i = 0; i < arr.length; i++) {
-//     orderedArr[i] = arr[i];
-//   }
-
-//   while (orderedArr.length > 0) {
-//     var randIndex = Math.floor(Math.random() * orderedArr.length);
-//     randomizedArr.push(orderedArr.splice(randIndex, 1)[0]);
-//   }
-
-//   return randomizedArr;
-// }
 
 function shuffle(ary) {  // from http://rosettacode.org/wiki/Knuth_shuffle#JavaScript
   var rand, temp, i;
 
   for (i = ary.length - 1; i > 0; i--) {
-    // rand = Math.floor(Math.random() * (i + 1));
-    rand = getRandomInt(0, i); //get random between zero and i (inclusive)
-    temp = ary[rand];  //swap i and the zero-indexed number
+    rand = getRandomInt(0, i); // get random between zero and i (inclusive)
+    temp = ary[rand];  // swap i and the zero-indexed number
     ary[rand] = ary[i];
     ary[i] = temp;
   }
@@ -120,10 +88,9 @@ function shuffle(ary) {  // from http://rosettacode.org/wiki/Knuth_shuffle#JavaS
 // working off of http://stackoverflow.com/questions/4083204/secure-random-numbers-in-javascript?rq=1
 // and http://stackoverflow.com/questions/18230217/javascript-generate-a-random-number-within-a-range-using-crypto-getrandomvalues
 function getRandomInt(min, max) {
-  // TODO: handle more than 256 questions or choices without changing from a Uint8Array
 
   // Create byte array and fill with 1 random number
-  var byteArray = new Uint8Array(1);
+  var byteArray = max < 256 ? new Uint8Array(1) : new Uint16Array(1); // Hopefully no test will have 70,000 questions.
 
   // First we're going to try to use a built-in CSPRNG
   if (window.crypto && window.crypto.getRandomValues) {
@@ -135,7 +102,7 @@ function getRandomInt(min, max) {
   }
 
   var range = max - min + 1;
-  var max_range = 256;
+  var max_range = max < 256 ? 256 : 65536;
   if (byteArray[0] >= Math.floor(max_range / range) * range) {
     return getRandomInt(min, max);
   }
@@ -167,9 +134,9 @@ function getRandomInt(min, max) {
 
 //definition of the test object
 function Test(aryQuestions, aryChoices, aryAnswers){
-	this.questions = aryQuestions;
-	this.choices = aryChoices;
-	this.answers = aryAnswers;
+  this.questions = aryQuestions;
+  this.choices = aryChoices;
+  this.answers = aryAnswers;
 }
 
 
@@ -177,104 +144,104 @@ function Test(aryQuestions, aryChoices, aryAnswers){
 //displays the sample test in the browser with the correct answer highlighted
 function WriteTest() {
 
-	var tst = CreateSampleTest();
+  var tst = CreateSampleTest();
 
-	tst = RandomizeTest(tst);
+  tst = RandomizeTest(tst);
 
-	document.write("<table border=0 cellspacing=3 cellpadding=3><form name=test id=test>");
+  document.write("<table border=0 cellspacing=3 cellpadding=3><form name=test id=test>");
 
-	for (i=0; i < tst.questions.length; i++) {
+  for (i=0; i < tst.questions.length; i++) {
 
-		document.write("<tr><td valign=top>&nbsp;</td>")
+    document.write("<tr><td valign=top>&nbsp;</td>")
 
-		document.write("<td><p>" + (i+1) + ".&nbsp;" + tst.questions[i]);
+    document.write("<td><p>" + (i+1) + ".&nbsp;" + tst.questions[i]);
 
-		for (j=0; j < tst.choices[i].length; j++) {
+    for (j=0; j < tst.choices[i].length; j++) {
 
-			var correctcount = 0;
-			var setblue = "";
+      var correctcount = 0;
+      var setblue = "";
 
-			for (k=0; k<tst.answers[i].length; k++) {
-				if (tst.answers[i][k] == 1) {
-					correctcount++;
-				}
-			}
+      for (k=0; k<tst.answers[i].length; k++) {
+        if (tst.answers[i][k] == 1) {
+          correctcount++;
+        }
+      }
 
-			if (tst.answers[i][j] == 1) {
-				setblue="class=blue"
-			}
+      if (tst.answers[i][j] == 1) {
+        setblue="class=blue"
+      }
 
-			if (correctcount == 1) {
-				document.write("<br><input type=radio name=check"+i+" value="+j+" onclick='return false;'>");
-				document.write("<span "+setblue+">"+tst.choices[i][j]+"</span>");
-			}
+      if (correctcount == 1) {
+        document.write("<br><input type=radio name=check"+i+" value="+j+" onclick='return false;'>");
+        document.write("<span "+setblue+">"+tst.choices[i][j]+"</span>");
+      }
 
-			else {
-				document.write("<br><input type=checkbox name=check"+i+" value="+j+" onclick='return false;'>");
-				document.write("<span "+setblue+">"+tst.choices[i][j]+"</span>");
-			}
-		}
+      else {
+        document.write("<br><input type=checkbox name=check"+i+" value="+j+" onclick='return false;'>");
+        document.write("<span "+setblue+">"+tst.choices[i][j]+"</span>");
+      }
+    }
 
-		document.write("</td></tr><tr><td colspan=2><br></td></tr>");
-	}
-	document.write('</form></table>');
+    document.write("</td></tr><tr><td colspan=2><br></td></tr>");
+  }
+  document.write('</form></table>');
 }
 
 
 
 function CreateSampleTest(){
 
-	var questions = [
-		"What can you find in Rustici Software's office?",
-		"All of Rustici Software employees are expected to work no more than ____ hours per week.",
-		"The end users of Rustici Software's products number in the _________",
-		"Rustici Software is a (choose all that apply):",
-		"Tim likes to wear:"
-	];
+  var questions = [
+    "What can you find in Rustici Software's office?",
+    "All of Rustici Software employees are expected to work no more than ____ hours per week.",
+    "The end users of Rustici Software's products number in the _________",
+    "Rustici Software is a (choose all that apply):",
+    "Tim likes to wear:"
+  ];
 
-	var choices = [
-		[
-			"Dart Board",
-			"Ping Pong Table",
-			"Cubicles",
-			"Laptops with dual monitors",
-			"TPS reports, ummm yeah"
-		],
-		[
-			"80",
-			"40",
-			"50",
-			"60"
-		],
-		[
-			"Tens",
-			"Hundreds",
-			"Thousands",
-			"Millions",
-			"Billions"
-		],
-		[
-			"Great place to work",
-			"Respected leader in its field",
-			"Place where people don't matter, just results"
-		],
-		[
-			"Capri pants",
-			"Goth attire",
-			"Sport coat",
-			"T-shirt and shorts"
-		]
-	];
+  var choices = [
+    [
+      "Dart Board",
+      "Ping Pong Table",
+      "Cubicles",
+      "Laptops with dual monitors",
+      "TPS reports, ummm yeah"
+    ],
+    [
+      "80",
+      "40",
+      "50",
+      "60"
+    ],
+    [
+      "Tens",
+      "Hundreds",
+      "Thousands",
+      "Millions",
+      "Billions"
+    ],
+    [
+      "Great place to work",
+      "Respected leader in its field",
+      "Place where people don't matter, just results"
+    ],
+    [
+      "Capri pants",
+      "Goth attire",
+      "Sport coat",
+      "T-shirt and shorts"
+    ]
+  ];
 
-	var answers = [
-		[1,1,0,1,0],
-		[0,1,0,0],
-		[0,0,0,1,0],
-		[1,1,0],
-		[0,0,0,1,0]
-	];
+  var answers = [
+    [1,1,0,1,0],
+    [0,1,0,0],
+    [0,0,0,1,0],
+    [1,1,0],
+    [0,0,0,1,0]
+  ];
 
-	return new Test(questions, choices, answers);
+  return new Test(questions, choices, answers);
 }
 
 

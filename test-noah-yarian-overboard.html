@@ -43,6 +43,8 @@ The order of the choices within each question should also be randomized.
 // If this needed to be as random as possible, thoughts I have would be to use the random.org API to get a random number on demand // (if an internet connection is available and could be sufficiently protected), a local hardware random number generator,
 // Chance.js or another library, or... well I see now there's a Web Crypto API. Time to implement it here!
 // Ok, updated. I have it working for a max of 256 questions / choices.
+// Ok. Up to 65536 questions / choices now! Next I will slim this all back down into something more easily
+// understood and maintained.
 
 function RandomizeTest(tstObject) {
 
@@ -119,10 +121,9 @@ function shuffle(ary) {  // from http://rosettacode.org/wiki/Knuth_shuffle#JavaS
 // working off of http://stackoverflow.com/questions/4083204/secure-random-numbers-in-javascript?rq=1
 // and http://stackoverflow.com/questions/18230217/javascript-generate-a-random-number-within-a-range-using-crypto-getrandomvalues
 function getRandomInt(min, max) {
-  // TODO: handle more than 256 questions or choices without changing from a Uint8Array or
 
   // Create byte array and fill with 1 random number
-  var byteArray = max < 256 ? new Uint8Array(1) : new Uint16Array(1);
+  var byteArray = max < 256 ? new Uint8Array(1) : new Uint16Array(1); // Hopefully no test will have 70,000 questions.
 
   // First we're going to try to use a built-in CSPRNG
   if (window.crypto && window.crypto.getRandomValues) {
